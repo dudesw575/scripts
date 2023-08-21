@@ -1,0 +1,19 @@
+# Make a backup of the current VS Code Config:
+cp $HOME/Library/Application\ Support/Code/User/settings.json settings.json
+
+# Find out the name of your Podman Machine, this is straightforward:
+PODMAN_MACHINE_NAME=$(podman machine list -q --format '{{.Name}}' | grep '*' | tr -d '*')
+
+# Get the location of the Socket
+PODMAN_SOCKET=$(podman machine inspect ${PODMAN_MACHINE_NAME} | jq -r '.[].ConnectionInfo.PodmanSocket.Path')
+# if you want to know where the socket is for later:
+# echo $PODMAN_SOCKET
+
+# Make a connection string with the unix:// prefix:
+PODMAN_HOST="unix://${PODMAN_SOCKET}"
+
+# [Dry-Run] Add the configuration to the settings.json VS Code file:
+jq --arg PODMAN_HOST "${PODMAN_HOST}"  '. + {"docker.environment":{DOCKER_HOST:$PODMAN_HOST}}' settings.json
+
+# Once it looks good, override the config:
+jq --arg PODMAN_HOST "${PODMAN_HOST}"  '. + {"docker.environment":{DOCKER_HOST:$PODMAN_HOST}}' settings.json > $HOME/Library/Application\ Support/Code/User/settings.json settings.json
